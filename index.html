@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>3D to Lotty Matrix</title>
+  <title>ModelProxy - Secure 3D View Sharing</title>
 
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-  <!-- Three.js & UMD GLTFLoader CDN (Fixed to global non-module version) -->
+  <!-- Three.js & UMD GLTFLoader CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
 
@@ -28,17 +28,16 @@
       font-family: 'Inter', sans-serif;
     }
 
-    /* Custom resizable container styling */
     .resizable-box {
       resize: both;
       overflow: hidden;
-      min-width: 140px;
-      min-height: 140px;
+      min-width: 200px;
+      min-height: 200px;
       max-width: 100%;
       max-height: 100%;
+      touch-action: none; /* Prevents mobile touch scrolling during drag */
     }
 
-    /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 6px;
       height: 6px;
@@ -61,20 +60,21 @@
   <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center space-x-3">
-        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-bold text-lg shadow-lg shadow-cyan-500/20">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-cyan-500/20">
           <i class="fa-solid fa-cube"></i>
         </div>
         <div>
-          <h1 class="font-bold text-base sm:text-lg tracking-tight text-white leading-none">3D to Lotty Matrix</h1>
-          <p class="text-[11px] text-slate-400 mt-1">Prevents exposing 3D model to client</p>
+          <h1 class="font-bold text-base sm:text-xl tracking-tight text-white leading-none">ModelProxy</h1>
+          <p class="text-xs text-slate-400 mt-1">Share interactive 3D views without sharing the 3D model</p>
         </div>
       </div>
       
       <div class="flex items-center space-x-3">
-        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
-          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
-          Pure 2D Security
-        </span>
+        <a href="https://github.com/saurabhgayali/ModelProxy" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-all shadow-sm">
+          <i class="fa-brands fa-github text-sm"></i>
+          
+        </a>
+     
       </div>
     </div>
   </header>
@@ -107,17 +107,17 @@
           <div class="relative border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-xl p-4 transition-all text-center group bg-slate-950/40 cursor-pointer">
             <input type="file" id="glbInput" accept=".glb" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
             <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-500 group-hover:text-cyan-400 transition-colors mb-2"></i>
-            <p id="uploadFileName" class="text-xs text-slate-300 font-medium truncate">Drop GLB here or click to browse</p>
+            <p id="uploadFileName" class="text-xs text-slate-300 font-medium truncate">Drop GLB file here or click to browse</p>
             <p class="text-[10px] text-slate-500 mt-1">Maximum 50MB (.glb format)</p>
           </div>
         </div>
 
-        <!-- Sample Models Field (Hidden by default) -->
+        <!-- Sample Models Field -->
         <div id="sampleContainer" class="space-y-2 hidden">
           <label for="sampleSelect" class="block text-xs text-slate-400 font-medium">Choose Demo Geometry</label>
           <select id="sampleSelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
             <option value="cube">Geometric Cube & Orbs</option>
-            <option value="knot">Torus Knot Primitive</option>
+            <option value="knot" selected>Torus Knot Primitive</option>
             <option value="pyramid">Crystal Pyramid</option>
           </select>
         </div>
@@ -133,12 +133,12 @@
         <div class="space-y-2">
           <label for="frameResolution" class="block text-xs text-slate-400 font-medium">Rotation Steps (X × Y)</label>
           <select id="frameResolution" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
-            <option value="4">4 × 4 Matrix (16 frames - Ultra Fast)</option>
+            <option value="4">4 × 4 Matrix (16 frames - Fast)</option>
             <option value="8" selected>8 × 8 Matrix (64 frames - Smooth)</option>
             <option value="12">12 × 12 Matrix (144 frames - High Detail)</option>
-            <option value="30">30 × 30 Matrix (900 frames - Ultra Smooth)</option>
+            <option value="16">16 × 16 Matrix (256 frames - Ultra Smooth)</option>
           </select>
-          <p class="text-[11px] text-slate-500">Generates transparent PNG angles for full rotational pitch & yaw control.</p>
+          <p class="text-[11px] text-slate-500">Generates transparent PNG matrix angles for pitch & yaw control.</p>
         </div>
 
         <!-- PNG Pixel Dimension Selector -->
@@ -156,14 +156,14 @@
           <label for="lightingStyle" class="block text-xs text-slate-400 font-medium">Studio Lighting Setup</label>
           <select id="lightingStyle" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
             <option value="studio">Studio Neutral (Soft Shadows)</option>
-            <option value="cyber">Cyber Neon (Cyan & Blue Glow)</option>
+            <option value="cyber" selected>Cyber Neon (Cyan & Blue Glow)</option>
             <option value="dramatic">High Contrast Metallic</option>
           </select>
         </div>
 
         <!-- Render Action Button -->
         <button id="btnRender" class="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
-          <i class="fa-solid fa-wand-magic-sparkles"></i> Render 2D Lottie Matrix
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Render 2D View Matrix
         </button>
       </div>
 
@@ -194,7 +194,7 @@
         </div>
       </div>
 
-      <!-- VIEW TAB 1: Resizable Interactive 2D Lottie Viewer -->
+      <!-- VIEW TAB 1: Resizable Interactive 2D Viewer -->
       <div id="panelViewer" class="space-y-4">
         
         <!-- Viewer Container Box -->
@@ -214,7 +214,7 @@
 
           <!-- Guidance Tag -->
           <div class="absolute top-4 left-4 z-10 text-[11px] text-slate-400 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
-            <i class="fa-solid fa-arrows-up-down-left-right text-cyan-400"></i> Drag mouse horizontally/vertically to rotate 2D model
+            <i class="fa-solid fa-arrows-up-down-left-right text-cyan-400"></i> Click & drag mouse to orbit 3D view
           </div>
 
           <!-- Dimension Badge -->
@@ -222,17 +222,19 @@
             380 × 380 px
           </div>
 
-          <!-- RESIZABLE VIEWER DIV (Seamless borderless) -->
-          <div id="resizableViewerContainer" class="resizable-box flex items-center justify-center p-2 cursor-grab active:cursor-grabbing my-6 bg-slate-900" style="width: 380px; height: 380px;">
+          <!-- RESIZABLE VIEWER DIV -->
+          <div id="resizableViewerContainer" class="resizable-box flex items-center justify-center p-2 cursor-grab active:cursor-grabbing my-6 bg-slate-900 border border-slate-800/80 rounded-xl" style="width: 380px; height: 380px;">
             
             <!-- Dynamic Rendered Image Frame -->
-            <img id="activeLottieFrame" src="" alt="2D Lottie Render Frame" class="w-full h-full object-contain pointer-events-none select-none transition-transform duration-75">
+            <img id="activeLottieFrame" src="" alt="2D Model Frame" class="w-full h-full object-contain pointer-events-none select-none hidden">
             
-            <!-- Initial Placeholder -->
+            <!-- Professional Initial Placeholder State -->
             <div id="placeholderPrompt" class="flex flex-col items-center justify-center text-center p-6 text-slate-500">
-              <i class="fa-solid fa-cube-arrows-rotate text-4xl mb-3 text-slate-600 animate-pulse"></i>
-              <p class="text-xs font-medium text-slate-400">Click "Render 2D Lottie Matrix" to process</p>
-              <p class="text-[10px] text-slate-600 mt-1">GLB model will be converted into client-safe transparent PNGs</p>
+              <div class="w-16 h-16 rounded-2xl bg-slate-800/60 border border-slate-700/60 flex items-center justify-center mb-3 text-cyan-400 text-2xl shadow-inner">
+                <i class="fa-solid fa-cubes animate-pulse"></i>
+              </div>
+              <p class="text-sm font-semibold text-slate-300">No View Matrix Rendered</p>
+              <p class="text-xs text-slate-500 mt-1 max-w-xs">Upload your 3D GLB model or select a demo preset and click <strong class="text-cyan-400 font-medium">Render 2D View Matrix</strong> to start.</p>
             </div>
           </div>
 
@@ -247,11 +249,10 @@
             <span id="gridStatsBadge" class="text-xs font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/60 px-2.5 py-1 rounded-md">0 Frames</span>
           </div>
           
-          <p class="text-xs text-slate-400">Below is the complete matrix of individual transparent PNG frames stored purely as 2D images.</p>
+          <p class="text-xs text-slate-400">Below is the matrix of individual transparent PNG frames stored purely as 2D images.</p>
 
           <!-- Frame Grid Display -->
           <div id="frameGridContainer" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-[480px] overflow-y-auto p-2 bg-slate-950/50 rounded-xl border border-slate-800">
-            <!-- Grid images populate here dynamically -->
             <div class="col-span-full py-12 text-center text-xs text-slate-500">
               No rendered frames generated yet. Run rendering first.
             </div>
@@ -280,7 +281,7 @@
     </div>
   </div>
 
-  <!-- Offscreen Canvas for Three.js GLB Rendering (Hidden) -->
+  <!-- Offscreen Canvas for Three.js GLB Rendering -->
   <div id="offscreenRenderContainer" class="fixed top-[-9999px] left-[-9999px] w-[512px] h-[512px] pointer-events-none opacity-0"></div>
 
   <script>
@@ -288,12 +289,15 @@
     let activeSourceType = 'upload'; // 'upload' | 'sample'
     let currentGlbFile = null;
     let matrixDimension = 8;
-    let renderedFramesMatrix = []; // [xIndex][yIndex] -> DataURL string
+    let renderedFramesMatrix = [];
+    let preloadedImageCache = [];
     let totalFrames = 64;
 
-    // Active Interactive Viewer States
+    // Pointer Drag Tracking State
     let activeX = 4;
     let activeY = 0;
+    let baseAngleX = 4;
+    let baseAngleY = 0;
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -334,7 +338,6 @@
     const modalMessage = document.getElementById('modalMessage');
     const modalCloseBtn = document.getElementById('modalCloseBtn');
 
-    // Utility Modal Trigger
     function showModal(title, msg) {
       modalTitle.textContent = title;
       modalMessage.textContent = msg;
@@ -396,81 +399,52 @@
     });
     resizeObserver.observe(resizableViewerContainer);
 
-    // Interactive 2D Viewer Drag Controls
-    resizableViewerContainer.addEventListener('mousedown', (e) => {
+    // ROBUST POINTER CAPTURE DRAG CONTROLS
+    function updateActiveFrameUI() {
+      if (preloadedImageCache[activeX] && preloadedImageCache[activeX][activeY]) {
+        activeLottieFrame.src = preloadedImageCache[activeX][activeY].src;
+      }
+    }
+
+    resizableViewerContainer.addEventListener('pointerdown', (e) => {
       if (!renderedFramesMatrix.length) return;
       isDragging = true;
       dragStartX = e.clientX;
       dragStartY = e.clientY;
+      baseAngleX = activeX;
+      baseAngleY = activeY;
+      resizableViewerContainer.setPointerCapture(e.pointerId);
     });
 
-    window.addEventListener('mouseup', () => {
-      isDragging = false;
-    });
-
-    window.addEventListener('mousemove', (e) => {
+    resizableViewerContainer.addEventListener('pointermove', (e) => {
       if (!isDragging || !renderedFramesMatrix.length) return;
-      
+
       const deltaX = e.clientX - dragStartX;
       const deltaY = e.clientY - dragStartY;
-      const stepSensitivity = 18; // pixels per step change
+      const pixelSensitivity = 12;
 
-      if (Math.abs(deltaX) > stepSensitivity) {
-        const step = Math.sign(deltaX);
-        activeY = (activeY + step + matrixDimension) % matrixDimension;
-        dragStartX = e.clientX;
-        updateActiveFrameUI();
-      }
+      const stepsY = Math.floor(deltaX / pixelSensitivity);
+      const stepsX = Math.floor(deltaY / pixelSensitivity);
 
-      if (Math.abs(deltaY) > stepSensitivity) {
-        const step = Math.sign(deltaY);
-        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));
-        dragStartY = e.clientY;
-        updateActiveFrameUI();
-      }
+      activeY = (baseAngleY + stepsY + (matrixDimension * 100)) % matrixDimension;
+      activeX = Math.max(0, Math.min(baseAngleX + stepsX, matrixDimension - 1));
+
+      updateActiveFrameUI();
     });
 
-    // Touch Support for Mobile
-    resizableViewerContainer.addEventListener('touchstart', (e) => {
-      if (!renderedFramesMatrix.length || !e.touches.length) return;
-      isDragging = true;
-      dragStartX = e.touches[0].clientX;
-      dragStartY = e.touches[0].clientY;
-    });
-
-    window.addEventListener('touchend', () => {
-      isDragging = false;
-    });
-
-    window.addEventListener('touchmove', (e) => {
-      if (!isDragging || !renderedFramesMatrix.length || !e.touches.length) return;
-      const touch = e.touches[0];
-      const deltaX = touch.clientX - dragStartX;
-      const deltaY = touch.clientY - dragStartY;
-      const stepSensitivity = 18;
-
-      if (Math.abs(deltaX) > stepSensitivity) {
-        const step = Math.sign(deltaX);
-        activeY = (activeY + step + matrixDimension) % matrixDimension;
-        dragStartX = touch.clientX;
-        updateActiveFrameUI();
-      }
-
-      if (Math.abs(deltaY) > stepSensitivity) {
-        const step = Math.sign(deltaY);
-        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));
-        dragStartY = touch.clientY;
-        updateActiveFrameUI();
-      }
-    });
-
-    function updateActiveFrameUI() {
-      if (renderedFramesMatrix[activeX] && renderedFramesMatrix[activeX][activeY]) {
-        activeLottieFrame.src = renderedFramesMatrix[activeX][activeY];
+    function endDrag(e) {
+      if (isDragging) {
+        isDragging = false;
+        try {
+          resizableViewerContainer.releasePointerCapture(e.pointerId);
+        } catch (err) {}
       }
     }
 
-    // Three.js Offscreen Rendering Engine
+    resizableViewerContainer.addEventListener('pointerup', endDrag);
+    resizableViewerContainer.addEventListener('pointercancel', endDrag);
+
+    // Three.js Offscreen Matrix Rendering Engine
     async function executeMatrixRender() {
       matrixDimension = parseInt(frameResolution.value, 10);
       totalFrames = matrixDimension * matrixDimension;
@@ -482,13 +456,12 @@
       progressBarInner.style.width = `0%`;
 
       renderedFramesMatrix = Array.from({ length: matrixDimension }, () => Array(matrixDimension).fill(null));
+      preloadedImageCache = Array.from({ length: matrixDimension }, () => Array(matrixDimension).fill(null));
 
-      // Get Render Pixel Dimensions
       const pixelDim = parseInt(document.getElementById('renderPixelSize')?.value || '512', 10);
       const width = pixelDim;
       const height = pixelDim;
 
-      // Update offscreen container size to match render pixel dimension
       const container = document.getElementById('offscreenRenderContainer');
       container.style.width = width + 'px';
       container.style.height = height + 'px';
@@ -497,14 +470,12 @@
       const scene = new THREE.Scene();
       const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
       
-      // Alpha enabled for transparent PNG rendering
       const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
       renderer.setSize(width, height);
-      renderer.setClearColor(0x000000, 0); // Completely transparent background
+      renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(1);
       container.appendChild(renderer.domElement);
 
-      // Setup Lighting based on selected preset
       const lightingPreset = lightingStyle.value;
       if (lightingPreset === 'cyber') {
         const ambientLight = new THREE.AmbientLight(0x0f172a, 1.5);
@@ -522,7 +493,6 @@
         dirLight.position.set(10, 10, 8);
         scene.add(dirLight);
       } else {
-        // Neutral Studio
         const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
         scene.add(ambientLight);
         const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
@@ -533,7 +503,6 @@
         scene.add(fillLight);
       }
 
-      // Group Object Container for Rotation
       const modelGroup = new THREE.Group();
       scene.add(modelGroup);
 
@@ -554,7 +523,6 @@
             }, reject);
           });
         } else {
-          // Built-in Geometries Fallback
           progressStatusText.textContent = "Generating Demo Geometry...";
           const sampleType = sampleSelect.value;
           
@@ -567,7 +535,6 @@
             const mat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.1, metalness: 0.9 });
             modelGroup.add(new THREE.Mesh(geom, mat));
           } else {
-            // Cube & Orbs
             const cubeGeom = new THREE.BoxGeometry(1.6, 1.6, 1.6);
             const cubeMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3, metalness: 0.6 });
             const cubeMesh = new THREE.Mesh(cubeGeom, cubeMat);
@@ -581,7 +548,6 @@
           }
         }
 
-        // Auto-center and fit model into camera view
         const box = new THREE.Box3().setFromObject(modelGroup);
         const center = box.getCenter(new THREE.Vector3());
         const size = box.getSize(new THREE.Vector3());
@@ -596,16 +562,13 @@
         camera.position.set(0, 0, cameraZ > 0 ? cameraZ : 5);
         camera.lookAt(0, 0, 0);
 
-        // Render Frame Matrix Loop
         progressStatusText.textContent = "Rendering Transparent 2D Frames...";
         let completedCount = 0;
 
         for (let xStep = 0; xStep < matrixDimension; xStep++) {
-          // X rotation angle (Pitch: -45 deg to +45 deg)
           const pitchAngle = ((xStep / (matrixDimension - 1 || 1)) - 0.5) * (Math.PI / 2);
 
           for (let yStep = 0; yStep < matrixDimension; yStep++) {
-            // Y rotation angle (Yaw: 0 deg to 360 deg)
             const yawAngle = (yStep / matrixDimension) * Math.PI * 2;
 
             modelGroup.rotation.x = pitchAngle;
@@ -613,23 +576,24 @@
 
             renderer.render(scene, camera);
 
-            // Capture Frame as Transparent PNG Base64 Data URL
             const frameDataUrl = renderer.domElement.toDataURL('image/png');
             renderedFramesMatrix[xStep][yStep] = frameDataUrl;
+
+            const img = new Image();
+            img.src = frameDataUrl;
+            preloadedImageCache[xStep][yStep] = img;
 
             completedCount++;
             const pct = Math.round((completedCount / totalFrames) * 100);
             progressBarInner.style.width = `${pct}%`;
             progressSubText.textContent = `Frame ${completedCount} of ${totalFrames} (${pct}%)`;
 
-            // Yield control to UI thread briefly for smooth progress updates
             if (completedCount % 4 === 0) {
-              await new Promise(r => setTimeout(r, 10));
+              await new Promise(r => setTimeout(r, 8));
             }
           }
         }
 
-        // Clean up 3D scene memory (3D Model is discarded; only 2D images remain)
         renderer.dispose();
         container.innerHTML = '';
 
@@ -653,22 +617,20 @@
     function finishRenderSuccess() {
       renderProgressOverlay.classList.add('hidden');
 
-      // Update Client Viewer
       activeX = Math.floor(matrixDimension / 2);
       activeY = 0;
-      updateActiveFrameUI();
-      populateGridInspector();
-
+      
       placeholderPrompt.classList.add('hidden');
       activeLottieFrame.classList.remove('hidden');
+
+      updateActiveFrameUI();
+      populateGridInspector();
       
       btnExportZip.disabled = false;
       btnExportZip.classList.remove('opacity-50', 'cursor-not-allowed');
       
       btnExportSingleHtml.disabled = false;
       btnExportSingleHtml.classList.remove('opacity-50', 'cursor-not-allowed');
-
-      showModal('Render Complete', `Successfully generated ${totalFrames} transparent 2D frames. You can now drag to rotate in 2D.`);
     }
 
     function populateGridInspector() {
@@ -690,7 +652,7 @@
       }
     }
 
-    // Helper to generate seamless standalone HTML string (Pure 2D Lottie, iframe-ready)
+    // Export Helpers
     function buildSeamlessViewerHtml(isEmbeddedBase64) {
       let matrixDataJS = '';
       if (isEmbeddedBase64) {
@@ -708,112 +670,81 @@
 '<head>\n' +
 '  <meta charset="UTF-8">\n' +
 '  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
-'  <title>Seamless 2D Lottie Viewer</title>\n' +
+'  <title>ModelProxy - 2D Interactive View</title>\n' +
 '  <style>\n' +
 '    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
 '    html, body {\n' +
-'      width: 100%;\n' +
-'      height: 100%;\n' +
-'      overflow: hidden;\n' +
-'      background: transparent;\n' +
-'      display: flex;\n' +
-'      align-items: center;\n' +
-'      justify-content: center;\n' +
+'      width: 100%; height: 100%; overflow: hidden;\n' +
+'      background: transparent; display: flex;\n' +
+'      align-items: center; justify-content: center;\n' +
 '    }\n' +
-'    .lottie-container {\n' +
-'      width: 100%;\n' +
-'      height: 100%;\n' +
-'      display: flex;\n' +
-'      align-items: center;\n' +
-'      justify-content: center;\n' +
-'      cursor: grab;\n' +
-'      user-select: none;\n' +
+'    .proxy-container {\n' +
+'      width: 100%; height: 100%; display: flex;\n' +
+'      align-items: center; justify-content: center;\n' +
+'      cursor: grab; user-select: none; touch-action: none;\n' +
 '    }\n' +
-'    .lottie-container:active { cursor: grabbing; }\n' +
-'    .lottie-container img {\n' +
-'      width: 100%;\n' +
-'      height: 100%;\n' +
-'      object-fit: contain;\n' +
-'      pointer-events: none;\n' +
+'    .proxy-container:active { cursor: grabbing; }\n' +
+'    .proxy-container img {\n' +
+'      width: 100%; height: 100%; object-fit: contain; pointer-events: none;\n' +
 '    }\n' +
 '  </style>\n' +
 '</head>\n' +
 '<body>\n' +
-'  <div class="lottie-container" id="lottieContainer">\n' +
-'    <img id="frameImg" src="' + initialFrameSrc + '" alt="2D Lottie Frame">\n' +
+'  <div class="proxy-container" id="proxyContainer">\n' +
+'    <img id="frameImg" src="' + initialFrameSrc + '" alt="ModelProxy View">\n' +
 '  </div>\n' +
 '  <script>\n' +
 '    const matrixDimension = ' + matrixDimension + ';\n' +
 '    ' + matrixDataJS + '\n' +
-'    const container = document.getElementById("lottieContainer");\n' +
+'    const container = document.getElementById("proxyContainer");\n' +
 '    const frameImg = document.getElementById("frameImg");\n' +
 '    let isDragging = false;\n' +
 '    let startX = 0, startY = 0;\n' +
-'    let activeX = Math.floor(matrixDimension / 2);\n' +
-'    let activeY = 0;\n' +
-'    function getFrameSrc(x, y) {\n' +
-'      ' + (isEmbeddedBase64 ? 'return framesMatrix[x][y];' : 'return "frames/frame_" + x + "_" + y + ".png";') + '\n' +
+'    let baseAngleX = Math.floor(matrixDimension / 2);\n' +
+'    let baseAngleY = 0;\n' +
+'    let activeX = baseAngleX;\n' +
+'    let activeY = baseAngleY;\n' +
+'    const cache = [];\n' +
+'    for (let x = 0; x < matrixDimension; x++) {\n' +
+'      cache[x] = [];\n' +
+'      for (let y = 0; y < matrixDimension; y++) {\n' +
+'        const img = new Image();\n' +
+'        img.src = ' + (isEmbeddedBase64 ? 'framesMatrix[x][y]' : '"frames/frame_" + x + "_" + y + ".png"') + ';\n' +
+'        cache[x][y] = img;\n' +
+'      }\n' +
 '    }\n' +
 '    function update() {\n' +
-'      frameImg.src = getFrameSrc(activeX, activeY);\n' +
+'      if (cache[activeX] && cache[activeX][activeY]) {\n' +
+'        frameImg.src = cache[activeX][activeY].src;\n' +
+'      }\n' +
 '    }\n' +
-'    container.addEventListener("mousedown", (e) => {\n' +
+'    container.addEventListener("pointerdown", (e) => {\n' +
 '      isDragging = true;\n' +
 '      startX = e.clientX;\n' +
 '      startY = e.clientY;\n' +
+'      baseAngleX = activeX;\n' +
+'      baseAngleY = activeY;\n' +
+'      container.setPointerCapture(e.pointerId);\n' +
 '    });\n' +
-'    window.addEventListener("mouseup", () => { isDragging = false; });\n' +
-'    window.addEventListener("mousemove", (e) => {\n' +
+'    container.addEventListener("pointermove", (e) => {\n' +
 '      if (!isDragging) return;\n' +
 '      const deltaX = e.clientX - startX;\n' +
 '      const deltaY = e.clientY - startY;\n' +
-'      const sensitivity = 18;\n' +
-'      if (Math.abs(deltaX) > sensitivity) {\n' +
-'        const step = Math.sign(deltaX);\n' +
-'        activeY = (activeY + step + matrixDimension) % matrixDimension;\n' +
-'        startX = e.clientX;\n' +
-'        update();\n' +
-'      }\n' +
-'      if (Math.abs(deltaY) > sensitivity) {\n' +
-'        const step = Math.sign(deltaY);\n' +
-'        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));\n' +
-'        startY = e.clientY;\n' +
-'        update();\n' +
-'      }\n' +
+'      const sensitivity = 12;\n' +
+'      const stepsY = Math.floor(deltaX / sensitivity);\n' +
+'      const stepsX = Math.floor(deltaY / sensitivity);\n' +
+'      activeY = (baseAngleY + stepsY + (matrixDimension * 100)) % matrixDimension;\n' +
+'      activeX = Math.max(0, Math.min(baseAngleX + stepsX, matrixDimension - 1));\n' +
+'      update();\n' +
 '    });\n' +
-'    container.addEventListener("touchstart", (e) => {\n' +
-'      if (!e.touches.length) return;\n' +
-'      isDragging = true;\n' +
-'      startX = e.touches[0].clientX;\n' +
-'      startY = e.touches[0].clientY;\n' +
-'    });\n' +
-'    window.addEventListener("touchend", () => { isDragging = false; });\n' +
-'    window.addEventListener("touchmove", (e) => {\n' +
-'      if (!isDragging || !e.touches.length) return;\n' +
-'      const touch = e.touches[0];\n' +
-'      const deltaX = touch.clientX - startX;\n' +
-'      const deltaY = touch.clientY - startY;\n' +
-'      const sensitivity = 18;\n' +
-'      if (Math.abs(deltaX) > sensitivity) {\n' +
-'        const step = Math.sign(deltaX);\n' +
-'        activeY = (activeY + step + matrixDimension) % matrixDimension;\n' +
-'        startX = touch.clientX;\n' +
-'        update();\n' +
-'      }\n' +
-'      if (Math.abs(deltaY) > sensitivity) {\n' +
-'        const step = Math.sign(deltaY);\n' +
-'        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));\n' +
-'        startY = touch.clientY;\n' +
-'        update();\n' +
-'      }\n' +
-'    });\n' +
-'    update();\n' +
+'    function stop(e) { if(isDragging) { isDragging = false; try{ container.releasePointerCapture(e.pointerId); }catch(err){} } }\n' +
+'    container.addEventListener("pointerup", stop);\n' +
+'    container.addEventListener("pointercancel", stop);\n' +
 '  ' + scriptCloseTag + '\n' +
 '</body>\n' +
 '</html>';
     }
 
-    // Dynamic ZIP Generator with JSZip
     btnExportZip.addEventListener('click', async () => {
       if (!renderedFramesMatrix.length) return;
 
@@ -837,34 +768,36 @@
 
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `3d_to_lotty_matrix_${matrixDimension}x${matrixDimension}.zip`;
+      a.download = `ModelProxy_Matrix_${matrixDimension}x${matrixDimension}.zip`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(downloadUrl);
-
-      showModal("Download Started", "Your ZIP bundle containing transparent frames and seamless index.html viewer has been downloaded.");
     });
 
-    // Single Standalone HTML Generator (Inline Base64 Data URLs)
     btnExportSingleHtml.addEventListener('click', () => {
       if (!renderedFramesMatrix.length) return;
 
-      showModal("Generating Single HTML", "Embedding transparent frames directly into a single HTML file...");
-      
       const singleHtmlContent = buildSeamlessViewerHtml(true);
       const blob = new Blob([singleHtmlContent], { type: "text/html;charset=utf-8" });
       const downloadUrl = URL.createObjectURL(blob);
 
       const a = document.createElement("a");
       a.href = downloadUrl;
-      a.download = `3d_lotty_viewer_${matrixDimension}x${matrixDimension}.html`;
+      a.download = `ModelProxy_Viewer_${matrixDimension}x${matrixDimension}.html`;
       document.body.appendChild(a);
       a.click();
       a.remove();
       URL.revokeObjectURL(downloadUrl);
+    });
 
-      showModal("Download Complete", "Single self-contained HTML file downloaded! It contains all PNG frames embedded directly as Base64 data and can be dropped into an iframe anywhere.");
+    // Run sample auto-render on initial startup
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!currentGlbFile) {
+        activeSourceType = 'sample';
+        btnSourceSample.click();
+        executeMatrixRender();
+      }
     });
   </script>
 </body>
