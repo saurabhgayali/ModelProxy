@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>3D to Lotty Matrix</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Three.js & UMD GLTFLoader CDN (Fixed to global non-module version) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/js/loaders/GLTFLoader.js"></script>
+
+  <!-- JSZip CDN for archiving -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Custom resizable container styling */
+    .resizable-box {
+      resize: both;
+      overflow: hidden;
+      min-width: 140px;
+      min-height: 140px;
+      max-width: 100%;
+      max-height: 100%;
+    }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 flex flex-col antialiased selection:bg-cyan-500 selection:text-slate-950 overflow-x-hidden">
+
+  <!-- Header Bar -->
+  <header class="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-slate-950 font-bold text-lg shadow-lg shadow-cyan-500/20">
+          <i class="fa-solid fa-cube"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base sm:text-lg tracking-tight text-white leading-none">3D to Lotty Matrix</h1>
+          <p class="text-[11px] text-slate-400 mt-1">Prevents exposing 3D model to client</p>
+        </div>
+      </div>
+      
+      <div class="flex items-center space-x-3">
+        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          Pure 2D Security
+        </span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- LEFT PANEL: Controls & Configuration -->
+    <section class="lg:col-span-4 space-y-5">
+      
+      <!-- Input Source Selector -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i class="fa-solid fa-file-import text-cyan-400"></i> Model Source
+        </h2>
+
+        <!-- Tab Toggle: Upload vs Preset -->
+        <div class="grid grid-cols-2 gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-medium">
+          <button id="btnSourceUpload" class="py-2 rounded-lg text-center transition-all bg-cyan-600 text-white shadow-sm">
+            Upload GLB
+          </button>
+          <button id="btnSourceSample" class="py-2 rounded-lg text-center text-slate-400 hover:text-slate-200 transition-all">
+            Built-in Samples
+          </button>
+        </div>
+
+        <!-- Upload Field -->
+        <div id="uploadContainer" class="space-y-2">
+          <label for="glbInput" class="block text-xs text-slate-400 font-medium">Select .GLB 3D File</label>
+          <div class="relative border-2 border-dashed border-slate-700 hover:border-cyan-500/50 rounded-xl p-4 transition-all text-center group bg-slate-950/40 cursor-pointer">
+            <input type="file" id="glbInput" accept=".glb" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10">
+            <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-500 group-hover:text-cyan-400 transition-colors mb-2"></i>
+            <p id="uploadFileName" class="text-xs text-slate-300 font-medium truncate">Drop GLB here or click to browse</p>
+            <p class="text-[10px] text-slate-500 mt-1">Maximum 50MB (.glb format)</p>
+          </div>
+        </div>
+
+        <!-- Sample Models Field (Hidden by default) -->
+        <div id="sampleContainer" class="space-y-2 hidden">
+          <label for="sampleSelect" class="block text-xs text-slate-400 font-medium">Choose Demo Geometry</label>
+          <select id="sampleSelect" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+            <option value="cube">Geometric Cube & Orbs</option>
+            <option value="knot">Torus Knot Primitive</option>
+            <option value="pyramid">Crystal Pyramid</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Matrix Resolution Settings -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-cyan-400"></i> Matrix Configuration
+        </h2>
+
+        <!-- Resolution Matrix Selector -->
+        <div class="space-y-2">
+          <label for="frameResolution" class="block text-xs text-slate-400 font-medium">Rotation Steps (X × Y)</label>
+          <select id="frameResolution" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
+            <option value="4">4 × 4 Matrix (16 frames - Ultra Fast)</option>
+            <option value="8" selected>8 × 8 Matrix (64 frames - Smooth)</option>
+            <option value="12">12 × 12 Matrix (144 frames - High Detail)</option>
+            <option value="30">30 × 30 Matrix (900 frames - Ultra Smooth)</option>
+          </select>
+          <p class="text-[11px] text-slate-500">Generates transparent PNG angles for full rotational pitch & yaw control.</p>
+        </div>
+
+        <!-- PNG Pixel Dimension Selector -->
+        <div class="space-y-2">
+          <label for="renderPixelSize" class="block text-xs text-slate-400 font-medium">PNG Render Pixel Dimension</label>
+          <select id="renderPixelSize" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500 font-mono">
+            <option value="256">256 × 256 px (Low Memory / Mobile)</option>
+            <option value="512" selected>512 × 512 px (Standard HD)</option>
+            <option value="1024">1024 × 1024 px (Ultra High Res)</option>
+          </select>
+        </div>
+
+        <!-- Render Quality Lighting preset -->
+        <div class="space-y-2">
+          <label for="lightingStyle" class="block text-xs text-slate-400 font-medium">Studio Lighting Setup</label>
+          <select id="lightingStyle" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-cyan-500">
+            <option value="studio">Studio Neutral (Soft Shadows)</option>
+            <option value="cyber">Cyber Neon (Cyan & Blue Glow)</option>
+            <option value="dramatic">High Contrast Metallic</option>
+          </select>
+        </div>
+
+        <!-- Render Action Button -->
+        <button id="btnRender" class="w-full py-3 px-4 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-xs rounded-xl shadow-lg shadow-cyan-500/20 transition-all flex items-center justify-center gap-2">
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Render 2D Lottie Matrix
+        </button>
+      </div>
+
+    </section>
+
+    <!-- RIGHT PANEL: Interactive 2D Viewer & Inspector -->
+    <section class="lg:col-span-8 space-y-4 flex flex-col">
+      
+      <!-- Navigation Tabs & Actions -->
+      <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2 gap-2">
+        <div class="flex space-x-2">
+          <button id="tabViewer" class="px-4 py-2 rounded-xl font-medium text-xs flex items-center gap-2 transition-all bg-cyan-600/20 text-cyan-300 border border-cyan-500/30">
+            <i class="fa-solid fa-hand-pointer"></i> Interactive 2D Viewer
+          </button>
+          <button id="tabInspector" class="px-4 py-2 rounded-xl font-medium text-xs flex items-center gap-2 transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent">
+            <i class="fa-solid fa-border-all"></i> Frame Grid Inspector
+          </button>
+        </div>
+
+        <!-- Download Buttons -->
+        <div class="flex items-center space-x-2">
+          <button id="btnExportSingleHtml" disabled class="px-3 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 bg-cyan-600/20 text-cyan-400 border border-cyan-500/40 opacity-50 cursor-not-allowed hover:bg-cyan-600 hover:text-white transition-all">
+            <i class="fa-solid fa-code"></i> Download Single HTML
+          </button>
+          <button id="btnExportZip" disabled class="px-3 py-1.5 rounded-xl font-semibold text-xs flex items-center gap-2 bg-emerald-600/20 text-emerald-400 border border-emerald-500/40 opacity-50 cursor-not-allowed hover:bg-emerald-600 hover:text-white transition-all">
+            <i class="fa-solid fa-file-zipper"></i> Download ZIP Bundle
+          </button>
+        </div>
+      </div>
+
+      <!-- VIEW TAB 1: Resizable Interactive 2D Lottie Viewer -->
+      <div id="panelViewer" class="space-y-4">
+        
+        <!-- Viewer Container Box -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center justify-center min-h-[460px] relative overflow-hidden">
+          
+          <!-- Processing Overlay Indicator -->
+          <div id="renderProgressOverlay" class="absolute inset-0 bg-slate-950/90 backdrop-blur z-20 flex flex-col items-center justify-center p-6 space-y-4 text-center hidden">
+            <div class="w-12 h-12 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin"></div>
+            <div>
+              <h3 class="font-semibold text-slate-100 text-sm" id="progressStatusText">Generating Transparent PNG Matrix...</h3>
+              <p class="text-xs text-slate-400 mt-1" id="progressSubText">Frame 0 of 64</p>
+            </div>
+            <div class="w-64 bg-slate-800 h-2 rounded-full overflow-hidden">
+              <div id="progressBarInner" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full w-0 transition-all duration-150"></div>
+            </div>
+          </div>
+
+          <!-- Guidance Tag -->
+          <div class="absolute top-4 left-4 z-10 text-[11px] text-slate-400 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2">
+            <i class="fa-solid fa-arrows-up-down-left-right text-cyan-400"></i> Drag mouse horizontally/vertically to rotate 2D model
+          </div>
+
+          <!-- Dimension Badge -->
+          <div class="absolute top-4 right-4 z-10 text-[11px] text-slate-400 bg-slate-950/80 border border-slate-800 px-3 py-1.5 rounded-lg flex items-center gap-2 font-mono" id="sizeBadge">
+            380 × 380 px
+          </div>
+
+          <!-- RESIZABLE VIEWER DIV (Seamless borderless) -->
+          <div id="resizableViewerContainer" class="resizable-box flex items-center justify-center p-2 cursor-grab active:cursor-grabbing my-6 bg-slate-900" style="width: 380px; height: 380px;">
+            
+            <!-- Dynamic Rendered Image Frame -->
+            <img id="activeLottieFrame" src="" alt="2D Lottie Render Frame" class="w-full h-full object-contain pointer-events-none select-none transition-transform duration-75">
+            
+            <!-- Initial Placeholder -->
+            <div id="placeholderPrompt" class="flex flex-col items-center justify-center text-center p-6 text-slate-500">
+              <i class="fa-solid fa-cube-arrows-rotate text-4xl mb-3 text-slate-600 animate-pulse"></i>
+              <p class="text-xs font-medium text-slate-400">Click "Render 2D Lottie Matrix" to process</p>
+              <p class="text-[10px] text-slate-600 mt-1">GLB model will be converted into client-safe transparent PNGs</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- VIEW TAB 2: Frame Matrix Grid Inspector -->
+      <div id="panelInspector" class="hidden space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-slate-200">Generated Frame Matrix</h3>
+            <span id="gridStatsBadge" class="text-xs font-mono text-cyan-400 bg-cyan-950/60 border border-cyan-800/60 px-2.5 py-1 rounded-md">0 Frames</span>
+          </div>
+          
+          <p class="text-xs text-slate-400">Below is the complete matrix of individual transparent PNG frames stored purely as 2D images.</p>
+
+          <!-- Frame Grid Display -->
+          <div id="frameGridContainer" class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-[480px] overflow-y-auto p-2 bg-slate-950/50 rounded-xl border border-slate-800">
+            <!-- Grid images populate here dynamically -->
+            <div class="col-span-full py-12 text-center text-xs text-slate-500">
+              No rendered frames generated yet. Run rendering first.
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Modal Notification Overlay -->
+  <div id="modalOverlay" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center border border-cyan-500/20">
+          <i class="fa-solid fa-circle-info text-lg"></i>
+        </div>
+        <h3 id="modalTitle" class="font-semibold text-slate-100 text-base">Notification</h3>
+      </div>
+      <p id="modalMessage" class="text-xs text-slate-300 leading-relaxed"></p>
+      <div class="flex justify-end pt-2">
+        <button id="modalCloseBtn" class="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs rounded-xl transition-all">
+          OK
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Offscreen Canvas for Three.js GLB Rendering (Hidden) -->
+  <div id="offscreenRenderContainer" class="fixed top-[-9999px] left-[-9999px] w-[512px] h-[512px] pointer-events-none opacity-0"></div>
+
+  <script>
+    // System Global States
+    let activeSourceType = 'upload'; // 'upload' | 'sample'
+    let currentGlbFile = null;
+    let matrixDimension = 8;
+    let renderedFramesMatrix = []; // [xIndex][yIndex] -> DataURL string
+    let totalFrames = 64;
+
+    // Active Interactive Viewer States
+    let activeX = 4;
+    let activeY = 0;
+    let isDragging = false;
+    let dragStartX = 0;
+    let dragStartY = 0;
+
+    // DOM Elements
+    const btnSourceUpload = document.getElementById('btnSourceUpload');
+    const btnSourceSample = document.getElementById('btnSourceSample');
+    const uploadContainer = document.getElementById('uploadContainer');
+    const sampleContainer = document.getElementById('sampleContainer');
+    const glbInput = document.getElementById('glbInput');
+    const uploadFileName = document.getElementById('uploadFileName');
+    const sampleSelect = document.getElementById('sampleSelect');
+    const frameResolution = document.getElementById('frameResolution');
+    const lightingStyle = document.getElementById('lightingStyle');
+    const btnRender = document.getElementById('btnRender');
+    
+    const tabViewer = document.getElementById('tabViewer');
+    const tabInspector = document.getElementById('tabInspector');
+    const panelViewer = document.getElementById('panelViewer');
+    const panelInspector = document.getElementById('panelInspector');
+    const btnExportZip = document.getElementById('btnExportZip');
+    const btnExportSingleHtml = document.getElementById('btnExportSingleHtml');
+    
+    const resizableViewerContainer = document.getElementById('resizableViewerContainer');
+    const activeLottieFrame = document.getElementById('activeLottieFrame');
+    const placeholderPrompt = document.getElementById('placeholderPrompt');
+    const sizeBadge = document.getElementById('sizeBadge');
+    
+    const renderProgressOverlay = document.getElementById('renderProgressOverlay');
+    const progressStatusText = document.getElementById('progressStatusText');
+    const progressSubText = document.getElementById('progressSubText');
+    const progressBarInner = document.getElementById('progressBarInner');
+    const frameGridContainer = document.getElementById('frameGridContainer');
+    const gridStatsBadge = document.getElementById('gridStatsBadge');
+
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalMessage = document.getElementById('modalMessage');
+    const modalCloseBtn = document.getElementById('modalCloseBtn');
+
+    // Utility Modal Trigger
+    function showModal(title, msg) {
+      modalTitle.textContent = title;
+      modalMessage.textContent = msg;
+      modalOverlay.classList.remove('hidden');
+    }
+
+    modalCloseBtn.addEventListener('click', () => {
+      modalOverlay.classList.add('hidden');
+    });
+
+    // Source Switchers
+    btnSourceUpload.addEventListener('click', () => {
+      activeSourceType = 'upload';
+      btnSourceUpload.className = "py-2 rounded-lg text-center transition-all bg-cyan-600 text-white shadow-sm";
+      btnSourceSample.className = "py-2 rounded-lg text-center text-slate-400 hover:text-slate-200 transition-all";
+      uploadContainer.classList.remove('hidden');
+      sampleContainer.classList.add('hidden');
+    });
+
+    btnSourceSample.addEventListener('click', () => {
+      activeSourceType = 'sample';
+      btnSourceSample.className = "py-2 rounded-lg text-center transition-all bg-cyan-600 text-white shadow-sm";
+      btnSourceUpload.className = "py-2 rounded-lg text-center text-slate-400 hover:text-slate-200 transition-all";
+      sampleContainer.classList.remove('hidden');
+      uploadContainer.classList.add('hidden');
+    });
+
+    // GLB File Input Change
+    glbInput.addEventListener('change', (e) => {
+      if (e.target.files && e.target.files[0]) {
+        currentGlbFile = e.target.files[0];
+        uploadFileName.textContent = currentGlbFile.name;
+        uploadFileName.classList.add('text-cyan-400');
+      }
+    });
+
+    // Tab Navigation
+    tabViewer.addEventListener('click', () => {
+      tabViewer.className = "px-4 py-2 rounded-xl font-medium text-xs flex items-center gap-2 transition-all bg-cyan-600/20 text-cyan-300 border border-cyan-500/30";
+      tabInspector.className = "px-4 py-2 rounded-xl font-medium text-xs flex items-center gap-2 transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent";
+      panelViewer.classList.remove('hidden');
+      panelInspector.classList.add('hidden');
+    });
+
+    tabInspector.addEventListener('click', () => {
+      tabInspector.className = "px-4 py-2 rounded-xl font-medium text-xs flex items-center gap-2 transition-all bg-cyan-600/20 text-cyan-300 border border-cyan-500/30";
+      tabViewer.className = "px-4 py-2 rounded-xl font-medium text-xs flex items-center gap-2 transition-all text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 border border-transparent";
+      panelInspector.classList.remove('hidden');
+      panelViewer.classList.add('hidden');
+    });
+
+    // Resize Observer for Size Badge
+    const resizeObserver = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        const width = Math.round(entry.contentRect.width);
+        const height = Math.round(entry.contentRect.height);
+        sizeBadge.textContent = `${width} × ${height} px`;
+      }
+    });
+    resizeObserver.observe(resizableViewerContainer);
+
+    // Interactive 2D Viewer Drag Controls
+    resizableViewerContainer.addEventListener('mousedown', (e) => {
+      if (!renderedFramesMatrix.length) return;
+      isDragging = true;
+      dragStartX = e.clientX;
+      dragStartY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', () => {
+      isDragging = false;
+    });
+
+    window.addEventListener('mousemove', (e) => {
+      if (!isDragging || !renderedFramesMatrix.length) return;
+      
+      const deltaX = e.clientX - dragStartX;
+      const deltaY = e.clientY - dragStartY;
+      const stepSensitivity = 18; // pixels per step change
+
+      if (Math.abs(deltaX) > stepSensitivity) {
+        const step = Math.sign(deltaX);
+        activeY = (activeY + step + matrixDimension) % matrixDimension;
+        dragStartX = e.clientX;
+        updateActiveFrameUI();
+      }
+
+      if (Math.abs(deltaY) > stepSensitivity) {
+        const step = Math.sign(deltaY);
+        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));
+        dragStartY = e.clientY;
+        updateActiveFrameUI();
+      }
+    });
+
+    // Touch Support for Mobile
+    resizableViewerContainer.addEventListener('touchstart', (e) => {
+      if (!renderedFramesMatrix.length || !e.touches.length) return;
+      isDragging = true;
+      dragStartX = e.touches[0].clientX;
+      dragStartY = e.touches[0].clientY;
+    });
+
+    window.addEventListener('touchend', () => {
+      isDragging = false;
+    });
+
+    window.addEventListener('touchmove', (e) => {
+      if (!isDragging || !renderedFramesMatrix.length || !e.touches.length) return;
+      const touch = e.touches[0];
+      const deltaX = touch.clientX - dragStartX;
+      const deltaY = touch.clientY - dragStartY;
+      const stepSensitivity = 18;
+
+      if (Math.abs(deltaX) > stepSensitivity) {
+        const step = Math.sign(deltaX);
+        activeY = (activeY + step + matrixDimension) % matrixDimension;
+        dragStartX = touch.clientX;
+        updateActiveFrameUI();
+      }
+
+      if (Math.abs(deltaY) > stepSensitivity) {
+        const step = Math.sign(deltaY);
+        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));
+        dragStartY = touch.clientY;
+        updateActiveFrameUI();
+      }
+    });
+
+    function updateActiveFrameUI() {
+      if (renderedFramesMatrix[activeX] && renderedFramesMatrix[activeX][activeY]) {
+        activeLottieFrame.src = renderedFramesMatrix[activeX][activeY];
+      }
+    }
+
+    // Three.js Offscreen Rendering Engine
+    async function executeMatrixRender() {
+      matrixDimension = parseInt(frameResolution.value, 10);
+      totalFrames = matrixDimension * matrixDimension;
+      
+      // Reset UI & Progress Overlay
+      renderProgressOverlay.classList.remove('hidden');
+      progressStatusText.textContent = "Initializing Offscreen 3D Canvas...";
+      progressSubText.textContent = `0 of ${totalFrames} frames`;
+      progressBarInner.style.width = `0%`;
+
+      renderedFramesMatrix = Array.from({ length: matrixDimension }, () => Array(matrixDimension).fill(null));
+
+      // Get Render Pixel Dimensions
+      const pixelDim = parseInt(document.getElementById('renderPixelSize')?.value || '512', 10);
+      const width = pixelDim;
+      const height = pixelDim;
+
+      // Update offscreen container size to match render pixel dimension
+      const container = document.getElementById('offscreenRenderContainer');
+      container.style.width = width + 'px';
+      container.style.height = height + 'px';
+      container.innerHTML = '';
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      
+      // Alpha enabled for transparent PNG rendering
+      const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, preserveDrawingBuffer: true });
+      renderer.setSize(width, height);
+      renderer.setClearColor(0x000000, 0); // Completely transparent background
+      renderer.setPixelRatio(1);
+      container.appendChild(renderer.domElement);
+
+      // Setup Lighting based on selected preset
+      const lightingPreset = lightingStyle.value;
+      if (lightingPreset === 'cyber') {
+        const ambientLight = new THREE.AmbientLight(0x0f172a, 1.5);
+        scene.add(ambientLight);
+        const dirLight1 = new THREE.DirectionalLight(0x06b6d4, 2.5);
+        dirLight1.position.set(5, 5, 5);
+        scene.add(dirLight1);
+        const dirLight2 = new THREE.DirectionalLight(0x3b82f6, 2.0);
+        dirLight2.position.set(-5, -5, -2);
+        scene.add(dirLight2);
+      } else if (lightingPreset === 'dramatic') {
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 3.0);
+        dirLight.position.set(10, 10, 8);
+        scene.add(dirLight);
+      } else {
+        // Neutral Studio
+        const ambientLight = new THREE.AmbientLight(0xffffff, 1.8);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+        dirLight.position.set(5, 10, 7);
+        scene.add(dirLight);
+        const fillLight = new THREE.DirectionalLight(0x94a3b8, 1.0);
+        fillLight.position.set(-5, -5, -5);
+        scene.add(fillLight);
+      }
+
+      // Group Object Container for Rotation
+      const modelGroup = new THREE.Group();
+      scene.add(modelGroup);
+
+      try {
+        if (activeSourceType === 'upload' && currentGlbFile) {
+          progressStatusText.textContent = "Parsing GLB File...";
+          const arrayBuffer = await currentGlbFile.arrayBuffer();
+          
+          if (typeof THREE.GLTFLoader === 'undefined') {
+            throw new Error("GLTFLoader is not available. Check network connectivity.");
+          }
+          const loader = new THREE.GLTFLoader();
+          
+          await new Promise((resolve, reject) => {
+            loader.parse(arrayBuffer, '', (gltf) => {
+              modelGroup.add(gltf.scene);
+              resolve();
+            }, reject);
+          });
+        } else {
+          // Built-in Geometries Fallback
+          progressStatusText.textContent = "Generating Demo Geometry...";
+          const sampleType = sampleSelect.value;
+          
+          if (sampleType === 'knot') {
+            const geom = new THREE.TorusKnotGeometry(1.2, 0.4, 120, 16);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, roughness: 0.2, metalness: 0.8 });
+            modelGroup.add(new THREE.Mesh(geom, mat));
+          } else if (sampleType === 'pyramid') {
+            const geom = new THREE.ConeGeometry(1.6, 2.2, 4);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x3b82f6, roughness: 0.1, metalness: 0.9 });
+            modelGroup.add(new THREE.Mesh(geom, mat));
+          } else {
+            // Cube & Orbs
+            const cubeGeom = new THREE.BoxGeometry(1.6, 1.6, 1.6);
+            const cubeMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3, metalness: 0.6 });
+            const cubeMesh = new THREE.Mesh(cubeGeom, cubeMat);
+            modelGroup.add(cubeMesh);
+
+            const orbGeom = new THREE.SphereGeometry(0.4, 32, 32);
+            const orbMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.9 });
+            const orb1 = new THREE.Mesh(orbGeom, orbMat);
+            orb1.position.set(1.4, 1.2, 0);
+            modelGroup.add(orb1);
+          }
+        }
+
+        // Auto-center and fit model into camera view
+        const box = new THREE.Box3().setFromObject(modelGroup);
+        const center = box.getCenter(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
+        
+        modelGroup.position.x = -center.x;
+        modelGroup.position.y = -center.y;
+        modelGroup.position.z = -center.z;
+
+        const maxDim = Math.max(size.x, size.y, size.z);
+        const fov = camera.fov * (Math.PI / 180);
+        let cameraZ = Math.abs(maxDim / (2 * Math.tan(fov / 2))) * 1.5;
+        camera.position.set(0, 0, cameraZ > 0 ? cameraZ : 5);
+        camera.lookAt(0, 0, 0);
+
+        // Render Frame Matrix Loop
+        progressStatusText.textContent = "Rendering Transparent 2D Frames...";
+        let completedCount = 0;
+
+        for (let xStep = 0; xStep < matrixDimension; xStep++) {
+          // X rotation angle (Pitch: -45 deg to +45 deg)
+          const pitchAngle = ((xStep / (matrixDimension - 1 || 1)) - 0.5) * (Math.PI / 2);
+
+          for (let yStep = 0; yStep < matrixDimension; yStep++) {
+            // Y rotation angle (Yaw: 0 deg to 360 deg)
+            const yawAngle = (yStep / matrixDimension) * Math.PI * 2;
+
+            modelGroup.rotation.x = pitchAngle;
+            modelGroup.rotation.y = yawAngle;
+
+            renderer.render(scene, camera);
+
+            // Capture Frame as Transparent PNG Base64 Data URL
+            const frameDataUrl = renderer.domElement.toDataURL('image/png');
+            renderedFramesMatrix[xStep][yStep] = frameDataUrl;
+
+            completedCount++;
+            const pct = Math.round((completedCount / totalFrames) * 100);
+            progressBarInner.style.width = `${pct}%`;
+            progressSubText.textContent = `Frame ${completedCount} of ${totalFrames} (${pct}%)`;
+
+            // Yield control to UI thread briefly for smooth progress updates
+            if (completedCount % 4 === 0) {
+              await new Promise(r => setTimeout(r, 10));
+            }
+          }
+        }
+
+        // Clean up 3D scene memory (3D Model is discarded; only 2D images remain)
+        renderer.dispose();
+        container.innerHTML = '';
+
+        finishRenderSuccess();
+
+      } catch (err) {
+        console.error(err);
+        renderProgressOverlay.classList.add('hidden');
+        showModal('Rendering Error', 'Failed to process 3D model geometry. Please verify the GLB file.');
+      }
+    }
+
+    btnRender.addEventListener('click', () => {
+      if (activeSourceType === 'upload' && !currentGlbFile) {
+        showModal('No File Selected', 'Please upload a .GLB file or select Built-in Samples.');
+        return;
+      }
+      executeMatrixRender();
+    });
+
+    function finishRenderSuccess() {
+      renderProgressOverlay.classList.add('hidden');
+
+      // Update Client Viewer
+      activeX = Math.floor(matrixDimension / 2);
+      activeY = 0;
+      updateActiveFrameUI();
+      populateGridInspector();
+
+      placeholderPrompt.classList.add('hidden');
+      activeLottieFrame.classList.remove('hidden');
+      
+      btnExportZip.disabled = false;
+      btnExportZip.classList.remove('opacity-50', 'cursor-not-allowed');
+      
+      btnExportSingleHtml.disabled = false;
+      btnExportSingleHtml.classList.remove('opacity-50', 'cursor-not-allowed');
+
+      showModal('Render Complete', `Successfully generated ${totalFrames} transparent 2D frames. You can now drag to rotate in 2D.`);
+    }
+
+    function populateGridInspector() {
+      frameGridContainer.innerHTML = '';
+      gridStatsBadge.textContent = `${totalFrames} Frames (${matrixDimension}×${matrixDimension})`;
+
+      for (let x = 0; x < matrixDimension; x++) {
+        for (let y = 0; y < matrixDimension; y++) {
+          const frameUrl = renderedFramesMatrix[x][y];
+          const div = document.createElement('div');
+          div.className = "group relative bg-slate-900 border border-slate-800 rounded-lg p-1.5 flex flex-col items-center justify-center hover:border-cyan-500/50 transition-all";
+          
+          div.innerHTML = `
+            <img src="${frameUrl}" class="w-full h-12 object-contain pointer-events-none">
+            <span class="text-[9px] font-mono text-slate-400 mt-1">X:${x} Y:${y}</span>
+          `;
+          frameGridContainer.appendChild(div);
+        }
+      }
+    }
+
+    // Helper to generate seamless standalone HTML string (Pure 2D Lottie, iframe-ready)
+    function buildSeamlessViewerHtml(isEmbeddedBase64) {
+      let matrixDataJS = '';
+      if (isEmbeddedBase64) {
+        matrixDataJS = 'const framesMatrix = ' + JSON.stringify(renderedFramesMatrix) + ';';
+      }
+
+      const initialFrameSrc = isEmbeddedBase64 
+        ? renderedFramesMatrix[Math.floor(matrixDimension/2)][0] 
+        : 'frames/frame_' + Math.floor(matrixDimension/2) + '_0.png';
+
+      const scriptCloseTag = '<' + '/script>';
+
+      return '<!DOCTYPE html>\n' +
+'<html lang="en">\n' +
+'<head>\n' +
+'  <meta charset="UTF-8">\n' +
+'  <meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+'  <title>Seamless 2D Lottie Viewer</title>\n' +
+'  <style>\n' +
+'    * { box-sizing: border-box; margin: 0; padding: 0; }\n' +
+'    html, body {\n' +
+'      width: 100%;\n' +
+'      height: 100%;\n' +
+'      overflow: hidden;\n' +
+'      background: transparent;\n' +
+'      display: flex;\n' +
+'      align-items: center;\n' +
+'      justify-content: center;\n' +
+'    }\n' +
+'    .lottie-container {\n' +
+'      width: 100%;\n' +
+'      height: 100%;\n' +
+'      display: flex;\n' +
+'      align-items: center;\n' +
+'      justify-content: center;\n' +
+'      cursor: grab;\n' +
+'      user-select: none;\n' +
+'    }\n' +
+'    .lottie-container:active { cursor: grabbing; }\n' +
+'    .lottie-container img {\n' +
+'      width: 100%;\n' +
+'      height: 100%;\n' +
+'      object-fit: contain;\n' +
+'      pointer-events: none;\n' +
+'    }\n' +
+'  </style>\n' +
+'</head>\n' +
+'<body>\n' +
+'  <div class="lottie-container" id="lottieContainer">\n' +
+'    <img id="frameImg" src="' + initialFrameSrc + '" alt="2D Lottie Frame">\n' +
+'  </div>\n' +
+'  <script>\n' +
+'    const matrixDimension = ' + matrixDimension + ';\n' +
+'    ' + matrixDataJS + '\n' +
+'    const container = document.getElementById("lottieContainer");\n' +
+'    const frameImg = document.getElementById("frameImg");\n' +
+'    let isDragging = false;\n' +
+'    let startX = 0, startY = 0;\n' +
+'    let activeX = Math.floor(matrixDimension / 2);\n' +
+'    let activeY = 0;\n' +
+'    function getFrameSrc(x, y) {\n' +
+'      ' + (isEmbeddedBase64 ? 'return framesMatrix[x][y];' : 'return "frames/frame_" + x + "_" + y + ".png";') + '\n' +
+'    }\n' +
+'    function update() {\n' +
+'      frameImg.src = getFrameSrc(activeX, activeY);\n' +
+'    }\n' +
+'    container.addEventListener("mousedown", (e) => {\n' +
+'      isDragging = true;\n' +
+'      startX = e.clientX;\n' +
+'      startY = e.clientY;\n' +
+'    });\n' +
+'    window.addEventListener("mouseup", () => { isDragging = false; });\n' +
+'    window.addEventListener("mousemove", (e) => {\n' +
+'      if (!isDragging) return;\n' +
+'      const deltaX = e.clientX - startX;\n' +
+'      const deltaY = e.clientY - startY;\n' +
+'      const sensitivity = 18;\n' +
+'      if (Math.abs(deltaX) > sensitivity) {\n' +
+'        const step = Math.sign(deltaX);\n' +
+'        activeY = (activeY + step + matrixDimension) % matrixDimension;\n' +
+'        startX = e.clientX;\n' +
+'        update();\n' +
+'      }\n' +
+'      if (Math.abs(deltaY) > sensitivity) {\n' +
+'        const step = Math.sign(deltaY);\n' +
+'        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));\n' +
+'        startY = e.clientY;\n' +
+'        update();\n' +
+'      }\n' +
+'    });\n' +
+'    container.addEventListener("touchstart", (e) => {\n' +
+'      if (!e.touches.length) return;\n' +
+'      isDragging = true;\n' +
+'      startX = e.touches[0].clientX;\n' +
+'      startY = e.touches[0].clientY;\n' +
+'    });\n' +
+'    window.addEventListener("touchend", () => { isDragging = false; });\n' +
+'    window.addEventListener("touchmove", (e) => {\n' +
+'      if (!isDragging || !e.touches.length) return;\n' +
+'      const touch = e.touches[0];\n' +
+'      const deltaX = touch.clientX - startX;\n' +
+'      const deltaY = touch.clientY - startY;\n' +
+'      const sensitivity = 18;\n' +
+'      if (Math.abs(deltaX) > sensitivity) {\n' +
+'        const step = Math.sign(deltaX);\n' +
+'        activeY = (activeY + step + matrixDimension) % matrixDimension;\n' +
+'        startX = touch.clientX;\n' +
+'        update();\n' +
+'      }\n' +
+'      if (Math.abs(deltaY) > sensitivity) {\n' +
+'        const step = Math.sign(deltaY);\n' +
+'        activeX = Math.max(0, Math.min(activeX + step, matrixDimension - 1));\n' +
+'        startY = touch.clientY;\n' +
+'        update();\n' +
+'      }\n' +
+'    });\n' +
+'    update();\n' +
+'  ' + scriptCloseTag + '\n' +
+'</body>\n' +
+'</html>';
+    }
+
+    // Dynamic ZIP Generator with JSZip
+    btnExportZip.addEventListener('click', async () => {
+      if (!renderedFramesMatrix.length) return;
+
+      const zip = new JSZip();
+      const framesFolder = zip.folder("frames");
+
+      for (let x = 0; x < matrixDimension; x++) {
+        for (let y = 0; y < matrixDimension; y++) {
+          const dataUrl = renderedFramesMatrix[x][y];
+          const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+          framesFolder.file(`frame_${x}_${y}.png`, base64Data, { base64: true });
+        }
+      }
+
+      const standaloneHTML = buildSeamlessViewerHtml(false);
+      zip.file("index.html", standaloneHTML);
+
+      showModal("Generating Bundle", "Compressing transparent PNGs into ZIP archive...");
+      const blob = await zip.generateAsync({ type: "blob" });
+      const downloadUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `3d_to_lotty_matrix_${matrixDimension}x${matrixDimension}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(downloadUrl);
+
+      showModal("Download Started", "Your ZIP bundle containing transparent frames and seamless index.html viewer has been downloaded.");
+    });
+
+    // Single Standalone HTML Generator (Inline Base64 Data URLs)
+    btnExportSingleHtml.addEventListener('click', () => {
+      if (!renderedFramesMatrix.length) return;
+
+      showModal("Generating Single HTML", "Embedding transparent frames directly into a single HTML file...");
+      
+      const singleHtmlContent = buildSeamlessViewerHtml(true);
+      const blob = new Blob([singleHtmlContent], { type: "text/html;charset=utf-8" });
+      const downloadUrl = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = downloadUrl;
+      a.download = `3d_lotty_viewer_${matrixDimension}x${matrixDimension}.html`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(downloadUrl);
+
+      showModal("Download Complete", "Single self-contained HTML file downloaded! It contains all PNG frames embedded directly as Base64 data and can be dropped into an iframe anywhere.");
+    });
+  </script>
+</body>
+</html>
