@@ -1,0 +1,23 @@
+{
+  "name": "modelproxy",
+  "version": "1.0.0",
+  "description": "**ModelProxy** is a 2D render-proxy system for sharing interactive views of 3D artwork on the web without delivering the original 3D asset to the viewer.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/saurabhgayali/ModelProxy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/saurabhgayali/ModelProxy/issues"
+  },
+  "homepage": "https://github.com/saurabhgayali/ModelProxy#readme",
+  "dependencies": {
+    "@vercel/analytics": "^2.0.1"
+  }
+}
